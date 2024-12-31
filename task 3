@@ -1,0 +1,70 @@
+const developerList = ["alex", "boris", "chris", "diana", "eva"];
+const searchPattern = "la";
+
+
+async function asyncFilterWithAbortController(array, check, controller) {
+    const signal = controller.signal;
+
+    try {
+        const results = await array.reduce(async (accPromise, item) => {
+            const acc = await accPromise;
+            if (signal.aborted) {
+                return acc;
+            }
+            try {
+                const checkResult = await check(item, signal);
+                if (checkResult.match && !checkResult.canceled) {
+                    acc.push(checkResult.value);
+                }
+            } catch (error) {
+                console.error("Error inside reduce:", error);
+            }
+            return acc;
+
+        }, Promise.resolve([]));
+        return results;
+    } catch (error) {
+        throw error;
+    }
+}
+
+function checkWordWithCancel(word, letters, signal) {
+    return new Promise((resolve) => {
+        let canceled = false;
+        const timeoutId = setTimeout(() => {
+            const match = [...letters].every(letter => word.includes(letter));
+          
+            resolve({ match: match, value: word, canceled });
+        }, 1800);
+
+
+    const abortListener = () => {
+      canceled = true;
+      clearTimeout(timeoutId);
+      resolve({match: false, value: word, canceled: true});
+    };
+    
+      if (signal.aborted){
+        abortListener();
+      } else {
+       signal.addEventListener("abort", abortListener);
+      }
+    
+    });
+}
+
+
+// Create AbortController
+const controller = new AbortController();
+
+asyncFilterWithAbortController(developerList, (word, signal) => checkWordWithCancel(word, searchPattern, signal), controller)
+    .then(result => {
+        console.log("Task3: Result:", result);
+    })
+    .catch(error => console.error("Task3 error:", error));
+
+// Cancel the operation after 1.5 seconds
+setTimeout(() => {
+    controller.abort();
+    console.log("Task3: Operations were canceled");
+}, 1500);

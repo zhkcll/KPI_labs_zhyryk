@@ -1,0 +1,67 @@
+const developerList = ["alex", "boris", "chris", "diana", "eva"];
+const userList = ["john", "hope", "peter", "optimus", "peggy"];
+const searchPattern = "or";
+
+async function asyncProcessWithReduce(array, check) {
+    try {
+        const results = await array.reduce(async (accPromise, item) => {
+            const acc = await accPromise;
+            const checkResult = await check(item);
+            if (checkResult.match) {
+                acc.push(checkResult.value);
+            }
+            return acc;
+        }, Promise.resolve([]));
+        return results;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+async function asyncProcessWithForOf(array, check) {
+  const results = [];
+    const indexedResults = {};
+
+    try {
+        for (const item of array) {
+            const indexSymbol = Symbol();
+          const checkResult = await check(item);
+            if(checkResult.match){
+                indexedResults[indexSymbol] = checkResult.value;
+            }
+
+        }
+      
+      for (const key in indexedResults) {
+          results.push(indexedResults[key]);
+      }
+       return results;
+
+    } catch (error) {
+      throw error;
+    }
+}
+
+
+let i = 0;
+function checkWord(word, letters) {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const match = [...letters].every(letter => word.includes(letter));
+            resolve({ match: match, value: word });
+        }, 1000 + 100 * (i++));
+    });
+}
+
+asyncProcessWithReduce(developerList, word => checkWord(word, searchPattern))
+    .then(result => {
+        console.log("Task2: Developer List (Reduce):", result);
+    })
+    .catch(error => console.error("Error:", error));
+
+asyncProcessWithForOf(userList, word => checkWord(word, searchPattern))
+    .then(result => {
+        console.log("Task2: User List (For...of):", result);
+    })
+    .catch(error => console.error("Error:", error));

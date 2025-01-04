@@ -4,31 +4,41 @@ const searchPattern1 = "ap";
 const searchPattern2 = "pe";
 
 function asyncProcess(array, searchPattern, finalCallback) {
-    array.reduce((accPromise, item) => {
-        return accPromise.then(acc => {
-            return isWordMatchLetters(item, searchPattern).then(isMatch => {
-                if (isMatch) {
-                    acc.push(item);
-                }
-                return acc;
-            });
+    let results = [];
+    let index = 0;
+
+    function processNext() {
+        if (index >= array.length) {
+            return finalCallback(null, results);
+        }
+
+        const item = array[index];
+        isWordMatchLetters(item, searchPattern, (err, isMatch) => {
+            if (err) {
+                return finalCallback(err);
+            }
+
+            if (isMatch) {
+                results.push(item);
+            }
+
+            index++;
+            processNext();
         });
-    }, Promise.resolve([]))
-    .then(results => finalCallback(null, results))
-    .catch(error => finalCallback(error));
+    }
+
+    processNext();
 }
 
-function isWordMatchLetters(word, letters) {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            try {
-                const hasLetters = [...letters].every(letter => word.includes(letter));
-                resolve(hasLetters);
-            } catch (error) {
-                reject(error);
-            }
-        }, 1000);
-    });
+function isWordMatchLetters(word, letters, callback) {
+    setTimeout(() => {
+        try {
+            const hasLetters = [...letters].every(letter => word.includes(letter));
+            callback(null, hasLetters);
+        } catch (error) {
+            callback(error);
+        }
+    }, 1000);
 }
 
 asyncProcess(developerList, searchPattern1, (err, res) => {

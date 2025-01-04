@@ -3,21 +3,19 @@ const userList = ["john", "hope", "peter", "optimus", "peggy"];
 const searchPattern1 = "ap";
 const searchPattern2 = "pe";
 
-async function asyncProcess(array, searchPattern, finalCallback) {
-    try {
-        const results = await array.reduce(async (accPromise, item) => {
-            const acc = await accPromise;
-            const isMatch = await isWordMatchLetters(item, searchPattern);
-            if (isMatch) {
-                acc.push(item);
-            }
-            return acc;
-
-        }, Promise.resolve([]));
-        finalCallback(null, results);
-    } catch (error) {
-        finalCallback(error);
-    }
+function asyncProcess(array, searchPattern, finalCallback) {
+    array.reduce((accPromise, item) => {
+        return accPromise.then(acc => {
+            return isWordMatchLetters(item, searchPattern).then(isMatch => {
+                if (isMatch) {
+                    acc.push(item);
+                }
+                return acc;
+            });
+        });
+    }, Promise.resolve([]))
+    .then(results => finalCallback(null, results))
+    .catch(error => finalCallback(error));
 }
 
 function isWordMatchLetters(word, letters) {
@@ -40,6 +38,7 @@ asyncProcess(developerList, searchPattern1, (err, res) => {
         console.log("Task1: Developer List:", res);
     }
 });
+
 asyncProcess(userList, searchPattern2, (err, res) => {
     if (err) {
         console.error("Error:", err);
